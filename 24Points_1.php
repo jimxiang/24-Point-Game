@@ -47,10 +47,8 @@ for($i = 0; $i < count($point); $i++)
 							$p_arr4 = array_merge($p_arr3, array($point[$p]));
 							array_push($points, $p_arr4);
 						}
-						
 					}
 				}
-				
 			}
 		}		
 	}
@@ -61,21 +59,23 @@ foreach($points as $key => $value)
 	build_expression($value);
 }
 
-$res = execute_calculate();
-echo json_encode($res);
+//$res = execute_calculate();
+//echo json_encode($res);
+//var_dump($expressions);
+//execute_calculate();
 
 function build_expression($point)
 {
 	$set = array();
     $operators = array("+", "-", "*", "/");
     global $expressions;
-    foreach($operators as $key => $value) 
+    foreach($operators as $value)
     {
         $temary1 = array_merge($set, array($point[0], $value, $point[1]));
-        foreach ($operators as $key => $value) {
-            $temary2 = array_merge($temary1, array($value, $point[2]));
-            foreach ($operators as $key => $value) {
-                $temary3 = array_merge($temary2, array($value, $point[3]));
+        foreach ($operators as $value2) {
+            $temary2 = array_merge($temary1, array($value2, $point[2]));
+            foreach ($operators as $value3) {
+                $temary3 = array_merge($temary2, array($value3, $point[3]));
                 array_push($expressions, $temary3);
                 // 添加括号
                 $temp = $temary3;
@@ -85,14 +85,14 @@ function build_expression($point)
                 unset($temp);
 
                 $temp = $temary3;
-                array_splice($temp, 0, 0, "(");
-                array_splice($temp, 4, 0, ")");
+                array_splice($temp, 2, 0, "(");
+                array_splice($temp, 6, 0, ")");
                 array_push($expressions, $temp);
                 unset($temp);
 
                 $temp = $temary3;
-                array_splice($temp, 2, 0, "(");
-                array_splice($temp, 6, 0, ")");
+                array_splice($temp, 4, 0, "(");
+                array_splice($temp, 8, 0, ")");
                 array_push($expressions, $temp);
                 unset($temp);
 
@@ -110,21 +110,27 @@ function build_expression($point)
 
 function execute_calculate() 
 {
-    global $res, $expressions;
-	for($i = 0; $i < count($expressions); $i++) {
+    global $expressions;
+	for($i = 0; $i < 10; $i++) {
 		$result = calculate_point($expressions[$i]);
 		$point = $result[0];
+		var_dump($point);
 		if($point == 24) {
-			return array("errCode" => 200, "msg" => $expressions[$i]);
+//			return array("errCode" => 200, "msg" => $expressions[$i]);
+			var_dump($expressions[$i]);
 		}
 	}
-	return array("errCode" => 400, "msg" => "无解");
+//	return array("errCode" => 400, "msg" => "无解");
 }
+
+$test = array("(", "1", "+", "7", ")", "*", "(", "6", "/", "2", ")");
+$result = calculate_point($test);
+var_dump($result);
 
 function calculate_point($arr)
 {
 	// 处理括号
-    if(in_array("(", $arr) || in_array(")", $arr))
+    while(in_array("(", $arr) || in_array(")", $arr))
     {
        for($i = 0; $i < count($arr); $i++)
        {
@@ -137,13 +143,20 @@ function calculate_point($arr)
                        $temp = ($arr[$i+1]) + ($arr[$i+3]);
                        break;
                    case "-":
-                       $temp = ($arr[$i+1]) - ($arr[$i+3]);
+					   if($arr[$i+1] > $arr[$i+3])
+					   {
+						   $temp = ($arr[$i+1]) - ($arr[$i+3]);
+					   }
                        break;
                    case "*":
                        $temp = ($arr[$i+1]) * ($arr[$i+3]);
                        break;
                    case "/":
-                       $temp = ($arr[$i+1]) / ($arr[$i+3]);
+					   if($temp[$i+3] != 0)
+					   {
+						   $temp = ($arr[$i+1]) / ($arr[$i+3]);
+					   }
+                       break;
                }
                $suffix = $i < (count($arr) - 1) ? array_slice($arr, $i+5) : NULL;
                $prefix = $i > 0 ? array_slice($arr, 0, $i) : NULL;
@@ -164,45 +177,6 @@ function calculate_point($arr)
     }
 	while(count($arr) > 1)
    	{
-   		while(in_array("(", $arr) || in_array(")", $arr))
-	    {
-	       for($i = 0; $i < count($arr); $i++)
-	       {
-	           if($arr[$i] == "(" && $arr[$i+4] == ")")
-	           {
-	               $temp = 0;
-	               switch($arr[$i+2])
-	               {
-	                   case "+":
-	                       $temp = ($arr[$i+1]) + ($arr[$i+3]);
-	                       break;
-	                   case "-":
-	                       $temp = ($arr[$i+1]) - ($arr[$i+3]);
-	                       break;
-	                   case "*":
-	                       $temp = ($arr[$i+1]) * ($arr[$i+3]);
-	                       break;
-	                   case "/":
-	                       $temp = ($arr[$i+1]) / ($arr[$i+3]);
-	               }
-	               $suffix = $i < (count($arr) - 1) ? array_slice($arr, $i+5) : NULL;
-	               $prefix = $i > 0 ? array_slice($arr, 0, $i) : NULL;
-	               if($suffix != NULL && $prefix != NULL)
-	               {
-	                   $arr = array_merge(array_merge($prefix, array($temp)), $suffix);
-	               }
-	               elseif($prefix == NULL && $suffix != NULL)
-	               {
-	                   $arr = array_merge(array($temp), $suffix);
-	               }
-	               elseif($suffix == NULL && $prefix != NULL)
-	               {
-	                   $arr = array_merge($prefix, array($temp));
-	               }
-	           }
-	       }
-	    }
-
 		if(in_array("*", $arr) || in_array("/", $arr))
 		{
            // 优先处理乘法和除法
@@ -241,7 +215,7 @@ function calculate_point($arr)
 					calculate_point($arr);
 				}
 
-				if($arr[$i] == "-")
+				if($arr[$i] == "-" && $arr[$i-1] && $arr[$i+1] && ($arr[$i+1] < $arr[$i-1]))
 				{
 					$temp = ($arr[$i-1]) - ($arr[$i+1]);
 					$suffix = array_slice($arr, $i+2);
