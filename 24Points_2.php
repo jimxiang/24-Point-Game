@@ -1,20 +1,52 @@
 <?php
-set_time_limit(0);
-$values = array(5, 5, 5, 1);
+
+$values = array();
 $result = 24;
 
 $list = array();
+$res = array();
 
-makeValue($values);
-print_r($list);
+foreach($_POST as $key => $value)
+{
+     array_push($values, $value);
+}
 
-function makeValue($values, $set=array())
+if(count($values) == 4)
+{
+    foreach($values as $value) {
+        if(!is_numeric($value) || $value < 1 || $value > 13)
+        {
+            $res = array("errCode" => 555, "msg" => "输入不合法");
+        }
+    }
+}
+
+else
+{
+    $res = array("errCode" => 999, "msg" => "请输入四个合法整数");
+}
+
+build_expression($values);
+
+if(count($list) > 0)
+{
+    // $res = array("errCode" => 200, "msg" => $list[0]);
+    $res = $list;
+}
+else
+{
+    $res = array("errCode" => 400, "msg" => "无解");
+}
+
+echo json_encode($res);
+
+function build_expression($values, $set=array())
 {
     $words = array("+", "-", "*", "/");
     if(sizeof($values)==1)
     {
         $set[] = array_shift($values);
-        return makeSpecial($set);
+        return add_brackets($set);
     }
 
     foreach($values as $key=>$value)
@@ -23,18 +55,18 @@ function makeValue($values, $set=array())
         unset($tmpValues[$key]);
         foreach($words as $word)
         {
-            makeValue($tmpValues, array_merge($set, array($value, $word)));
+            build_expression($tmpValues, array_merge($set, array($value, $word)));
         }
     }
 }
 
-function makeSpecial($set)
+function add_brackets($set)
 {
     $size = sizeof($set);
 
     if($size<=3 || !in_array("/", $set) && !in_array("*", $set))
     {
-        return makeResult($set);
+        return calculate($set);
     }
 
     for($len=3; $len<$size-1; $len+=2)
@@ -49,16 +81,18 @@ function makeSpecial($set)
             $tmpSet = $set;
             array_splice($tmpSet, $start, $len-1);
             $tmpSet[$start] = "(".implode("", $subSet).")";
-            makeSpecial($tmpSet);
+            add_brackets($tmpSet);
         }
     }
 }
 
-function makeResult($set)
+function calculate($set)
 {
     global $result, $list;
     $str = implode("", $set);
     @eval("\$num=$str;");
     if($num==$result && !in_array($str, $list))
+    {
         $list[] = $str;
+    }
 }
